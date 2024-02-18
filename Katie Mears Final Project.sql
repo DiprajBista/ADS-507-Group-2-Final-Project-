@@ -1,9 +1,10 @@
 # Download California State Jobs csv from Kaggle.com - https://www.kaggle.com/datasets/datasciencedonut/california-state-jobs
 # Download 2023 Income Limits by County from CA.gov website - https://data.ca.gov/dataset/income-limits-by-county
+
 # Remove SQL_SAFE_UPDATES protection 
 SET SQL_SAFE_UPDATES = 0;
 
-
+# Create Database CA_job_listings
 CREATE SCHEMA CA_job_listings;
 USE CA_job_listings;
 SELECT * FROM calcareerdata1;
@@ -155,18 +156,43 @@ SET avg_salary =
 ALTER TABLE jobs
 MODIFY COLUMN avg_salary INT AFTER salary_high;
 
+
+
+# Add a new column to calculate the annual salary
+ALTER TABLE jobs
+ADD COLUMN annual_salary INT;
+
+# Update the new column with the calculated annual salary values
+UPDATE jobs
+SET annual_salary = avg_salary * 12;
+
+# Move new annual_salary column to after avg_salary column
+ALTER TABLE jobs
+MODIFY COLUMN annual_salary INT AFTER avg_salary;
+
+# View jobs table to confirm change was successful 
+SELECT * FROM jobs;
+
 # View counties found in Location column 
 SELECT DISTINCT location
 FROM jobs;
 
+
 # Create New Table from Jobs table that contains Job_ID, Working_title, Salary, avg_salary and Location columns 
 CREATE TABLE job_salary_location AS
-SELECT Job_ID, Working_title, Salary, avg_salary, Location 
+SELECT Job_ID, Working_title, Salary, annual_salary, Location 
 FROM jobs;
 
 # Make Job_ID the primary key 
 ALTER TABLE job_salary_location
 ADD PRIMARY KEY (Job_ID);
+
+ALTER TABLE job_salary_location
+RENAME COLUMN annual_salary TO avg_annual_salary;
+
+# Drop the word County from each row in the job_salary_location table 
+UPDATE job_salary_location
+SET County = REPLACE(County, 'County', '');
 
 # View job_salary_location table to confirm change was successful 
 SELECT * FROM job_salary_location;
@@ -180,5 +206,46 @@ FROM household_income;
 ALTER TABLE average_median_income
 ADD PRIMARY KEY (County_ID);
 
+ALTER TABLE average_median_income
+MODIFY COLUMN County VARCHAR(45);
+
 # View average_median_income table to confirm change was successful 
 SELECT * FROM average_median_income;
+
+SELECT * FROM job_salary_location;
+
+
+ALTER TABLE average_median_income
+DROP PRIMARY KEY;
+
+ALTER TABLE average_median_income
+MODIFY COLUMN County_ID INT;
+
+
+ALTER TABLE job_salary_location
+DROP PRIMARY KEY;
+
+ALTER TABLE job_salary_location
+MODIFY COLUMN Job_ID INT;
+
+
+
+# Trim Location data in jsl table to align with the County column in ami table 
+SELECT jsl.Location
+FROM job_salary_location jsl
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM average_median_income ami
+    WHERE LOWER(TRIM(jsl.Location)) = LOWER(TRIM(ami.County))
+);
+
+DROP TABLE combined_data;
+
+
+CREATE TABLE combined_data AS
+SELECT jsl.avg_annual_salary, jsl.Location AS County,
+       ami.County_ID AS AMI_County_ID, ami.County AS AMI_County, ami.AMI
+FROM job_salary_location jsl
+JOIN average_median_income ami ON jsl.Location = ami.County;
+
+SELECT * FROM combined_data;
