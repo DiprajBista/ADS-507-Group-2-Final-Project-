@@ -7,8 +7,6 @@ SET SQL_SAFE_UPDATES = 0;
 # Create Database CA_job_listings
 CREATE SCHEMA CA_job_listings;
 USE CA_job_listings;
-SELECT * FROM calcareerdata1;
-SELECT COUNT(*) AS total_rows FROM calcareerdata1;
 
 # Add Job_ID unique identifier to the jobs table 
 ALTER TABLE `ca_job_listings`.`jobs`
@@ -156,8 +154,6 @@ SET avg_salary =
 ALTER TABLE jobs
 MODIFY COLUMN avg_salary INT AFTER salary_high;
 
-
-
 # Add a new column to calculate the annual salary
 ALTER TABLE jobs
 ADD COLUMN annual_salary INT;
@@ -176,7 +172,6 @@ SELECT * FROM jobs;
 # View counties found in Location column 
 SELECT DISTINCT location
 FROM jobs;
-
 
 # Create New Table from Jobs table that contains Job_ID, Working_title, Salary, avg_salary and Location columns 
 CREATE TABLE job_salary_location AS
@@ -211,26 +206,11 @@ MODIFY COLUMN County VARCHAR(45);
 
 # View average_median_income table to confirm change was successful 
 SELECT * FROM average_median_income;
-
 SELECT * FROM job_salary_location;
 
 
-ALTER TABLE average_median_income
-DROP PRIMARY KEY;
 
-ALTER TABLE average_median_income
-MODIFY COLUMN County_ID INT;
-
-
-ALTER TABLE job_salary_location
-DROP PRIMARY KEY;
-
-ALTER TABLE job_salary_location
-MODIFY COLUMN Job_ID INT;
-
-
-
-# Trim Location data in jsl table to align with the County column in ami table 
+# Trim Location data in jsl table to align with the County column in ami table and confirm the location/counties match in both tables 
 SELECT jsl.Location
 FROM job_salary_location jsl
 WHERE NOT EXISTS (
@@ -239,13 +219,29 @@ WHERE NOT EXISTS (
     WHERE LOWER(TRIM(jsl.Location)) = LOWER(TRIM(ami.County))
 );
 
-DROP TABLE combined_data;
-
-
-CREATE TABLE combined_data AS
-SELECT jsl.avg_annual_salary, jsl.Location AS County,
-       ami.County_ID AS AMI_County_ID, ami.County AS AMI_County, ami.AMI
+# drop rows that dont match both columns Location_County
+DELETE jsl
 FROM job_salary_location jsl
-JOIN average_median_income ami ON jsl.Location = ami.County;
+LEFT JOIN average_median_income ami ON UPPER(TRIM(jsl.Location)) = UPPER(TRIM(ami.County))
+WHERE ami.County IS NULL;
 
+# View Counties in common in both columns (Location/Country)
+SELECT DISTINCT UPPER(jsl.Location) AS jsl_County
+FROM job_salary_location jsl
+WHERE UPPER(jsl.Location) NOT IN (
+    SELECT UPPER(ami.County)
+    FROM average_median_income ami
+);
+
+# Create Combined Data Table to Join based on County 
+CREATE TABLE combined_data AS
+SELECT jsl.Job_ID, jsl.avg_annual_salary, UPPER(TRIM(jsl.Location)) AS jsl_County,
+       ami.County_ID, ami.County AS ami_County, ami.AMI
+FROM job_salary_location jsl
+LEFT JOIN average_median_income ami ON UPPER(TRIM(jsl.Location)) = UPPER(TRIM(ami.County));
+
+# View combined Data Table 
 SELECT * FROM combined_data;
+
+
+
