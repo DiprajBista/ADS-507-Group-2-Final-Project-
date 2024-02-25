@@ -10,11 +10,10 @@ This repository contains the 4 csv files that were used to create out data pipel
 California State Jobs csv from Kaggle.com - https://www.kaggle.com/datasets/datasciencedonut/california-state-jobs <br> 
 2023 Income Limits by County from CA.gov website - https://data.ca.gov/dataset/income-limits-by-county <br>
 Median Prices of Existing Single Family Homes - https://www.car.org/en/marketdata/data/housingdata <br>
-      Note: There was a manual deletion of the first 7 lines from the Median Prices of Existing Single Family Homes file and csv conversion before loading into mysql workbench 
-
+      Note: There was a manual deletion of the first 7 lines from the Median Prices of Existing Single Family Homes file and csv conversion before loading into mysql workbench <br>
 The repository also contains a Income Limits Data Dictionary that was obatined from https://data.ca.gov/dataset/income-limits-by-county which explains the column names for the 2023 Income Limits by County csv. <br> 
 
-There is a finalproject_azure.sql file which outlines all of the data extraction, loading and transformation processes that were performed to build the database. <br>
+There is a finalproject_azure.sql file which outlines the data extraction, loading and transformation processes that were performed to build the database. <br>
 The adsfinalproject.ipynb file contains all of the data analysis, visualizations and build of the dashboard used for the project. <br>
 There is a JSON file (template.json) that was exported from Microsoft Azure which defines the infastructure and configuration of the database. <br>
 
