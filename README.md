@@ -16,6 +16,7 @@ The repository also contains a Income Limits Data Dictionary that was obatined f
 There is a finalproject_azure.sql file which outlines the data extraction, loading and transformation processes that were performed to build the database. <br>
 The adsfinalproject.ipynb file contains all of the data analysis, visualizations and build of the dashboard used for the project. <br>
 There is a JSON file (template.json) that was exported from Microsoft Azure which defines the infastructure and configuration of the database. <br>
+There is also the ERR Diagram for the schema located in the repository. <br> 
 
 The database is being stored on a Microsoft Azure server and can be accessed with the following credentials: <br>
 Host ID: jobsfinal507.mysql.database.azure.com <br>
