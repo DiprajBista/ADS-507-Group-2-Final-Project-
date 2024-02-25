@@ -12,14 +12,33 @@ CREATE SCHEMA CA_job_listings; # Run Only Once
 
 USE CA_job_listings;
 
-# Add Job_ID unique identifier to the jobs table 
-ALTER TABLE `ca_job_listings`.`jobs`
-MODIFY COLUMN `Job_ID` INT AUTO_INCREMENT,
-ADD UNIQUE INDEX `Job_ID_UNIQUE` (`Job_ID` ASC) VISIBLE;
+# Create jobs table
+CREATE TABLE `jobs` (
+  `Job_ID` int NOT NULL AUTO_INCREMENT,
+  `Listing_Title` varchar(90) NOT NULL,
+  `Working_title` varchar(95) NOT NULL,
+  `Req_ID` varchar(45) NOT NULL,
+  `Salary` varchar(25) NOT NULL,
+  `salary_low` int DEFAULT NULL,
+  `salary_high` int DEFAULT NULL,
+  `avg_salary` int DEFAULT NULL,
+  `annual_salary` int DEFAULT NULL,
+  `Employment_type` varchar(45) NOT NULL,
+  `Department` varchar(75) NOT NULL,
+  `Location` varchar(45) NOT NULL,
+  `Publish_Date` date DEFAULT NULL,
+  `Filing_Deadline` date DEFAULT NULL,
+  `URL` varchar(95) NOT NULL,
+  PRIMARY KEY (`Job_ID`),
+  UNIQUE KEY `Job_ID_UNIQUE` (`Job_ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=27861 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 # View Rows of Data imported 
-SELECT COUNT(*) AS total_rows FROM jobs;
+SELECT * FROM jobs;
 
+# Count Rows of Data Imported
+SELECT COUNT(*) AS total_rows FROM jobs;
 
 ## Transformations for jobs table 
 # Remove $ from Salary Range 
@@ -163,6 +182,88 @@ SELECT DISTINCT location
 FROM jobs;
 
 
+
+
+## Create New Table from Jobs table that contains Job_ID, Working_title, Salary, avg_salary and Location columns 
+CREATE TABLE job_salary_location (
+    Job_ID INT,
+    Working_title VARCHAR(95) NOT NULL,
+    Salary VARCHAR(25) NOT NULL,
+    annual_salary INT,
+    Location VARCHAR(45) NOT NULL,
+    PRIMARY KEY (Job_ID)
+) ENGINE=InnoDB;
+
+INSERT INTO job_salary_location (Job_ID, Working_title, Salary, annual_salary, Location)
+SELECT Job_ID, Working_title, Salary, annual_salary, Location 
+FROM jobs;
+
+
+## Transformations for job_salary_location table
+ALTER TABLE job_salary_location
+RENAME COLUMN annual_salary TO avg_annual_salary;
+
+# Drop the word County from each row in the job_salary_location table 
+UPDATE job_salary_location
+SET Location = REPLACE(Location, 'County', '');
+
+# View job_salary_location table to confirm change was successful 
+SELECT * FROM job_salary_location;
+
+
+
+
+# Create Household income table 
+CREATE TABLE `household_income` (
+  `County_ID` int NOT NULL AUTO_INCREMENT,
+  `County` varchar(75) NOT NULL,
+  `AMI` int NOT NULL,
+  `ALI_1` int NOT NULL,
+  `ALI_2` int NOT NULL,
+  `ALI_3` int NOT NULL,
+  `ALI_4` int NOT NULL,
+  `ALI_5` int NOT NULL,
+  `ALI_6` int NOT NULL,
+  `ALI_7` int NOT NULL,
+  `ALI_8` int NOT NULL,
+  `ELI_1` int NOT NULL,
+  `ELI_2` int NOT NULL,
+  `ELI_3` int NOT NULL,
+  `ELI_4` int NOT NULL,
+  `ELI_5` int NOT NULL,
+  `ELI_6` int NOT NULL,
+  `ELI_7` int NOT NULL,
+  `ELI_8` int NOT NULL,
+  `VLI_1` int NOT NULL,
+  `VLI_2` int NOT NULL,
+  `VLI_3` int NOT NULL,
+  `VLI_4` int NOT NULL,
+  `VLI_5` int NOT NULL,
+  `VLI_6` int NOT NULL,
+  `VLI_7` int NOT NULL,
+  `VLI_8` int NOT NULL,
+  `LI_1` int NOT NULL,
+  `LI_2` int NOT NULL,
+  `LI_3` int NOT NULL,
+  `LI_4` int NOT NULL,
+  `LI_5` int NOT NULL,
+  `LI_6` int NOT NULL,
+  `LI_7` int NOT NULL,
+  `LI_8` int NOT NULL,
+  `MOD_1` int NOT NULL,
+  `MOD_2` int NOT NULL,
+  `MOD_3` int NOT NULL,
+  `MOD_4` int NOT NULL,
+  `MOD_5` int NOT NULL,
+  `MOD_6` int NOT NULL,
+  `MOD_7` int NOT NULL,
+  `MOD_8` int NOT NULL,
+  PRIMARY KEY (`County_ID`),
+  UNIQUE KEY `County_ID_UNIQUE` (`County_ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+
 ## Transformations for household_income table 
 # Add Job_ID unique identifier to the household_income table 
 ALTER TABLE `household_income`
@@ -177,31 +278,18 @@ ADD PRIMARY KEY (County_ID);
 ALTER TABLE household_income
 MODIFY COLUMN County_ID INT AUTO_INCREMENT FIRST;
 
+SELECT * FROM household_income;
 
 
-## Create New Table from Jobs table that contains Job_ID, Working_title, Salary, avg_salary and Location columns 
-CREATE TABLE job_salary_location AS
-SELECT Job_ID, Working_title, Salary, annual_salary, Location 
-FROM jobs;
 
-## Transformations for job_salary_location table 
-# Make Job_ID the primary key 
-ALTER TABLE job_salary_location
-ADD PRIMARY KEY (Job_ID);
-
-ALTER TABLE job_salary_location
-RENAME COLUMN annual_salary TO avg_annual_salary;
-
-# Drop the word County from each row in the job_salary_location table 
-UPDATE job_salary_location
-SET County = REPLACE(County, 'County', '');
-
-# View job_salary_location table to confirm change was successful 
-SELECT * FROM job_salary_location;
 
 
 ## Create New Table from household_income table that contains County_ID, County, and AMI (Average Median Income)  
 CREATE TABLE average_median_income AS
+SELECT County_ID, County, AMI 
+FROM household_income;
+
+INSERT INTO average_median_income (County_ID, County, AMI)
 SELECT County_ID, County, AMI 
 FROM household_income;
 
@@ -215,7 +303,7 @@ MODIFY COLUMN County VARCHAR(45);
 
 # View average_median_income table to confirm change was successful 
 SELECT * FROM average_median_income;
-SELECT * FROM job_salary_location;
+
 
 
 
@@ -256,6 +344,15 @@ SELECT jsl.Job_ID,
        ami.AMI
 FROM job_salary_location jsl
 LEFT JOIN average_median_income ami ON UPPER(TRIM(jsl.Location)) = UPPER(TRIM(ami.County));
+
+ALTER TABLE combined_data
+MODIFY COLUMN my_row_id bigint unsigned NOT NULL AUTO_INCREMENT,
+MODIFY COLUMN Job_ID INT DEFAULT NULL,
+MODIFY COLUMN working_title VARCHAR(95) NOT NULL,
+MODIFY COLUMN avg_annual_salary INT DEFAULT NULL,
+MODIFY COLUMN County_ID INT DEFAULT NULL,
+MODIFY COLUMN County VARCHAR(45) DEFAULT NULL,
+MODIFY COLUMN Avg_Median_Income INT DEFAULT NULL;
 
 
 # View combined Data Table 
@@ -337,6 +434,12 @@ CREATE TABLE housing_data (
 
 # View Housing_data table to confirm
 SELECT * FROM housing_data;
+
+# Make table visible 
+ALTER TABLE housing_data
+MODIFY COLUMN my_row_id bigint unsigned NOT NULL AUTO_INCREMENT;
+
+
 
 
 ## Transformations for Housing_data Table 
@@ -508,6 +611,9 @@ SELECT 'Yolo', AVG(REPLACE(REPLACE(Yolo, ',', ''), '$', '')) FROM housing_data W
 UNION ALL
 SELECT 'Yuba', AVG(REPLACE(REPLACE(Yuba, ',', ''), '$', '')) FROM housing_data WHERE Mon_Yr LIKE '%-23' AND Mon_Yr <> 'Average_Rounded' AND Yuba NOT LIKE '%na%';
 
+# Make table visible 
+ALTER TABLE transposed_housing_data
+MODIFY COLUMN my_row_id bigint unsigned NOT NULL AUTO_INCREMENT;
 
 # View transposed_housing_data table to confirm
 SELECT * FROM transposed_housing_data;
@@ -532,7 +638,13 @@ LEFT JOIN
 ON 
     UPPER(TRIM(cd.jsl_County)) = UPPER(TRIM(thd.County));
     
+    
+# View new table
 SELECT * FROM combined_data_with_home_price;
+
+# Make table visible 
+ALTER TABLE combined_data_with_home_price
+MODIFY COLUMN my_row_id bigint unsigned NOT NULL AUTO_INCREMENT;
 
 
 ## Final Transformations on combined_data_with_home_price table
